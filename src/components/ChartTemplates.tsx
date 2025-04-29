@@ -55,7 +55,7 @@ const tablePlots: ChartTemplate[] = [
         "chart": "Table",
         "icon": chartIconTable,
         "template": { },
-        "channels": ["field 1", "field 2", "field 3", "field 4", "field 5", 'field 6'],
+        "channels": [], //"field 1", "field 2", "field 3", "field 4", "field 5", 'field 6'
         "paths": { }
     },
 ]
@@ -297,12 +297,12 @@ const barCharts: ChartTemplate[] = [
         "template": {
             "mark": "bar",
             "encoding": {
-                "y": {"aggregate": "count", "title": "Count"},
             }
         },
-        "channels": ["x", "color", "column", "row"],
+        "channels": ["x", "y", "color", "column", "row"],
         "paths": {
             "x": ["encoding", "x"],
+            "y": ["encoding", "y"],
             "color": ["encoding", "color"],
             "column": ["encoding", "column"],
             "row": ["encoding", "row"]
