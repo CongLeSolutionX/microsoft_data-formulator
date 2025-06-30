@@ -59,6 +59,12 @@ interface AppConfig {
     DISABLE_DISPLAY_KEYS: boolean;
 }
 
+const decodeHtmlEntities = (text: string): string => {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+};
+
 export const ModelSelectionButton: React.FC<{}> = ({ }) => {
 
     const dispatch = useDispatch();
@@ -89,6 +95,39 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
             .catch(error => {
                 console.error("Failed to fetch app configuration:", error);
             });
+    }, []);
+
+    useEffect(() => {
+        const findWorkingModel = async () => {
+            for (let i = 0; i < models.length; i++) {
+                if (testedModels.find(t => t.id == models[i].id)) {
+                    continue;
+                }
+                const model = models[i];
+                const message = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', },
+                    body: JSON.stringify({
+                        model: model,
+                    }),
+                };
+                try {
+                    const response = await fetch(getUrls().TEST_MODEL, {...message });
+                    const data = await response.json();
+                    const status = data["status"] || 'error';
+                    updateModelStatus(model, status, data["message"] || "");
+                    if (status === 'ok') {
+                        break;
+                    }
+                } catch (error) {
+                    updateModelStatus(model, 'error', (error as Error).message || 'Failed to test model');
+                }
+            }
+        };
+
+        if (models.length > 0 && testedModels.filter(t => t.status == 'ok').length == 0) {
+            findWorkingModel();
+        }
     }, []);
 
     let updateModelStatus = (model: ModelConfig, status: 'ok' | 'error' | 'testing' | 'unknown', message: string) => {
@@ -377,11 +416,14 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
                     if (status == "unknown") {
                         message = "Click the status icon to test again before applying.";
                     } else if (status == "error") {
-                        message = testedModels.find(t => t.id == model.id)?.message || "Unknown error";
+                        const rawMessage = testedModels.find(t => t.id == model.id)?.message || "Unknown error";
+                        message = decodeHtmlEntities(rawMessage);
                     }
 
                     const borderStyle = ['error', 'unknown'].includes(status) ? '1px dashed text.secondary' : undefined;
                     const noBorderStyle = ['error', 'unknown'].includes(status) ? 'none' : undefined;
+
+                    console.log(message)
 
                     return (
                         <>
@@ -465,7 +507,8 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
                                 <TableCell colSpan={2} align="right" ></TableCell>
                                 <TableCell colSpan={6}>
                                     <Typography variant="caption" color="#c82c2c">
-                                        {message}
+                                        {message} 
+                                        
                                     </Typography>
                                 </TableCell>
                             </TableRow>
